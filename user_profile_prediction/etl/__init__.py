@@ -1,5 +1,6 @@
 import os
 
+from numpy import array
 from pandas import DataFrame
 from typing import List, Dict
 
@@ -20,4 +21,5 @@ class BasePreprocess(object):
 
     @classmethod
     def load_from_csv(cls, file_path: str) -> DataFrame: ...
-    def count_word_freq(self) -> None: ...
+    def load_embedding_model(self): ...
+    def words_to_vec(self, word: str) -> array: ...
