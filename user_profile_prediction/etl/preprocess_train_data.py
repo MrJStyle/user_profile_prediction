@@ -17,7 +17,7 @@ from tqdm import tqdm
 stop_words: StopwordsDataset = StopwordsDataset()
 
 
-class PreprocessTrain(BasePreprocess):
+class PreprocessTrainingData(BasePreprocess):
     embedding_model: Word2Vec
 
     MIN_COUNT: int = 5          # embedding
@@ -37,7 +37,7 @@ class PreprocessTrain(BasePreprocess):
         return df
 
     def __init__(self, file_path: str, load_model: bool = False):
-        super(PreprocessTrain, self).__init__(file_path)
+        super(PreprocessTrainingData, self).__init__(file_path)
         self.load_model = load_model
         self.preprocess_data.columns = list()
 
@@ -104,7 +104,7 @@ class PreprocessTrain(BasePreprocess):
 if __name__ == "__main__":
     import tensorflow as tf
 
-    p = PreprocessTrain("/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv")
+    p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv")
     model = p.train_word2vec_model()
 
     ts = tf.data.Dataset.from_generator(p.age_data_iter, (tf.float16, tf.int8))
