@@ -17,3 +17,5 @@ tensorflow==2.2.0
 xgboost==1.1.1
 click==7.1.2
 motor==2.2.0
+tqdm==4.48.2
+gensim==3.8.3
