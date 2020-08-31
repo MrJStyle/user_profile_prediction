@@ -22,7 +22,7 @@ async def insert_data(record, collection, db):
 
 
 async def find_data(collection, db):
-    cursor = db[collection].find({"ID" : "1B6DAFBFB25D21B233A67407A5336B80"}, projection={"_id": 0})
+    cursor = db[collection].find({}, projection={"_id": 0})
     data = []
 
     async for c in cursor:
