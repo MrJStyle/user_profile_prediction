@@ -3,10 +3,11 @@ import jieba
 import pandas as pd
 import numpy as np
 
-from typing import List, Iterable, Tuple
+from typing import List, Iterable, Tuple, Generator
 from pandas import DataFrame
 from numpy import array
 from gensim.models import Word2Vec
+from tensorflow import Tensor
 
 from user_profile_prediction.etl import BasePreprocess
 from user_profile_prediction.data.stopwords import StopwordsDataset
@@ -88,17 +89,23 @@ class PreprocessTrainingData(BasePreprocess):
 
         return sentence_array
 
-    def age_data_iter(self) -> Tuple[array, int]:
+    def age_data_iter(self) -> Generator[Tuple[array, int]]:
         for i, s in enumerate(self.split_word_sentences):
             yield self.words_to_vec(s), self.age_label[i]
 
-    def gender_data_iter(self) -> Tuple[array, int]:
+    def gender_data_iter(self) -> Generator[Tuple[array, int]]:
         for i, s in enumerate(self.split_word_sentences):
             yield self.words_to_vec(s), self.gender_label[i]
 
-    def education_data_iter(self) -> Tuple[array, int]:
+    def education_data_iter(self) -> Generator[Tuple[array, int]]:
         for i, s in enumerate(self.split_word_sentences):
             yield self.words_to_vec(s), self.education_label[i]
+
+    @staticmethod
+    def trans_data_to_tensor(data_iter: Generator) -> Generator[Tuple[Tensor, Tensor]]:
+        for x, y in data_iter:
+            one_hot_y: Tensor = tf.one_hot(y, depth=tf.unique(y).y.shape[0])
+            yield tf.constant(x), one_hot_y
 
 
 if __name__ == "__main__":
