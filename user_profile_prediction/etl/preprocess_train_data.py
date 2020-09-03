@@ -6,10 +6,10 @@ import numpy as np
 from typing import List, Iterable, Tuple, Generator
 from pandas import DataFrame
 from numpy import array
-from gensim.models import Word2Vec
 from tensorflow import Tensor
 
 from user_profile_prediction.etl import BasePreprocess
+from user_profile_prediction.etl.embedding import EmbeddingModel
 from user_profile_prediction.data.stopwords import StopwordsDataset
 
 from tqdm import tqdm
@@ -19,13 +19,6 @@ stop_words: StopwordsDataset = StopwordsDataset()
 
 
 class PreprocessTrainingData(BasePreprocess):
-    embedding_model: Word2Vec
-
-    MIN_COUNT: int = 5          # embedding
-    SIZE: int = 100
-    SENTENCE_LEN: int = 3
-    EMBEDDING_MODEL_SAVED_PATH: str = os.path.join(BasePreprocess.dir_path, "embedding_model.txt")
-
     age_label: List[int] = list()
     gender_label: List[int] = list()
     education_label: List[int] = list()
@@ -37,16 +30,11 @@ class PreprocessTrainingData(BasePreprocess):
 
         return df
 
-    def __init__(self, file_path: str, load_model: bool = False):
+    def __init__(self, file_path: str):
         super(PreprocessTrainingData, self).__init__(file_path)
-        self.load_model = load_model
         self.preprocess_data.columns = list()
 
-    def train_word2vec_model(self) -> Word2Vec:
-        if self.load_model:
-            self.load_embedding_model()
-            return self.embedding_model
-
+    def split_sentence(self):
         for index, query in tqdm(self.data.iterrows()):
             if index == 1000:
                 break
@@ -57,52 +45,27 @@ class PreprocessTrainingData(BasePreprocess):
                 self.education_label.append(query["Education"])
 
                 cut_words: List = jieba.lcut(sentence)
-                self.split_word_sentences.append(self.filter_stop_words(cut_words))
-
-        self.embedding_model: Word2Vec = Word2Vec(
-            self.split_word_sentences, min_count=self.MIN_COUNT, size=self.SIZE
-        )
-
-        if os.path.exists(self.EMBEDDING_MODEL_SAVED_PATH):
-            os.remove(self.EMBEDDING_MODEL_SAVED_PATH)
-
-        self.embedding_model.save(self.EMBEDDING_MODEL_SAVED_PATH)
-
-        return self.embedding_model
+                self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
+        return self.sentences_with_split_words
 
     @staticmethod
     def filter_stop_words(words: Iterable) -> List:
         return [w for w in words if w not in stop_words and w != " "]
 
-    def load_embedding_model(self) -> None:
-        self.embedding_model = Word2Vec.load(self.EMBEDDING_MODEL_SAVED_PATH)
+    def age_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
+        for i, s in enumerate(self.sentences_with_split_words):
+            yield model.words_to_vec(s, 3), self.age_label[i]
 
-    def words_to_vec(self, words: Iterable[str]) -> array:
-        sentence_array: array = np.zeros((self.SENTENCE_LEN, self.SIZE))
+    def gender_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
+        for i, s in enumerate(self.sentences_with_split_words):
+            yield model.words_to_vec(s, 3), self.gender_label[i]
 
-        for i, w in enumerate(words):
-            if i == self.SENTENCE_LEN:
-                return sentence_array
-
-            if w in self.embedding_model.wv:
-                sentence_array[i] = self.embedding_model.wv[w]
-
-        return sentence_array
-
-    def age_data_iter(self) -> Generator[Tuple[array, int]]:
-        for i, s in enumerate(self.split_word_sentences):
-            yield self.words_to_vec(s), self.age_label[i]
-
-    def gender_data_iter(self) -> Generator[Tuple[array, int]]:
-        for i, s in enumerate(self.split_word_sentences):
-            yield self.words_to_vec(s), self.gender_label[i]
-
-    def education_data_iter(self) -> Generator[Tuple[array, int]]:
-        for i, s in enumerate(self.split_word_sentences):
-            yield self.words_to_vec(s), self.education_label[i]
+    def education_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
+        for i, s in enumerate(self.sentences_with_split_words):
+            yield model.words_to_vec(s, 3), self.education_label[i]
 
     @staticmethod
-    def trans_data_to_tensor(data_iter: Generator) -> Generator[Tuple[Tensor, Tensor]]:
+    def trans_data_to_tensor(data_iter: Generator) -> Generator[Tuple[Tensor, Tensor], None, None]:
         for x, y in data_iter:
             one_hot_y: Tensor = tf.one_hot(y, depth=tf.unique(y).y.shape[0])
             yield tf.constant(x), one_hot_y
@@ -110,11 +73,14 @@ class PreprocessTrainingData(BasePreprocess):
 
 if __name__ == "__main__":
     import tensorflow as tf
+    from user_profile_prediction.etl.embedding import Embedding
 
     p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv")
-    model = p.train_word2vec_model()
+    p.split_sentence()
 
-    ts = tf.data.Dataset.from_generator(p.age_data_iter, (tf.float16, tf.int8))
+    e = Embedding(100, 5)
+    m = e.load_embedding_model()
 
-    print(list(ts.take(5).as_numpy_iterator()))
+    next(p.age_data_iter(e))
+
     print("finish")
