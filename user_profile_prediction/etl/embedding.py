@@ -1,21 +1,15 @@
 import os
 import numpy as np
 
-from typing import Iterable, Union
+from typing import Iterable
 from numpy import array
 from gensim.models import Word2Vec
 
-from user_profile_prediction.etl import dir_path, BaseEmbedding
+from user_profile_prediction.etl import BaseEmbedding
 from user_profile_prediction.exceptions import NotInitError
 
 
 class Embedding(BaseEmbedding):
-    MIN_COUNT: int
-    EMBEDDING_SIZE: int
-    EMBEDDING_MODEL_SAVED_PATH: str = os.path.join(dir_path, "embedding_model.txt")
-
-    _embedding_model: Word2Vec
-
     def __init__(self, embedding_size: int, min_count: int = 1, save_path: str = None):
         self.EMBEDDING_SIZE = embedding_size
         self.MIN_COUNT = min_count
@@ -55,6 +49,3 @@ class Embedding(BaseEmbedding):
                 sentence_array[i] = self._embedding_model.wv[w]
 
         return sentence_array
-
-
-EmbeddingModel = Union[Embedding]

@@ -1,19 +1,14 @@
-import os
 import jieba
 import pandas as pd
-import numpy as np
 
 from typing import List, Iterable, Tuple, Generator
-from pandas import DataFrame
 from numpy import array
+from pandas import DataFrame
 from tensorflow import Tensor
-
-from user_profile_prediction.etl import BasePreprocess
-from user_profile_prediction.etl.embedding import EmbeddingModel
-from user_profile_prediction.data.stopwords import StopwordsDataset
-
 from tqdm import tqdm
 
+from user_profile_prediction.data.stopwords import StopwordsDataset
+from user_profile_prediction.etl import BasePreprocess, EmbeddingModel
 
 stop_words: StopwordsDataset = StopwordsDataset()
 

@@ -3,13 +3,15 @@ import os
 from gensim.models import Word2Vec
 from numpy import array
 from pandas import DataFrame
-from typing import List, Dict, Iterable, Tuple, Generator
+from typing import List, Iterable, Tuple, Generator, TypeVar
 from tensorflow import Tensor
 
-from user_profile_prediction.etl.embedding import EmbeddingModel
+# from user_profile_prediction.etl.embedding import Embedding
 
 current_file_path: str = os.path.abspath(__file__)
 dir_path: str = os.path.dirname(current_file_path)
+
+EmbeddingModel = TypeVar("EmbeddingModel")
 
 
 class BasePreprocess(object):
@@ -45,5 +47,7 @@ class BaseEmbedding:
     _embedding_model: Word2Vec
 
     def train_word2vec_model(self, sentences_with_spilt_words: Iterable[Iterable[str]]) -> Word2Vec: ...
+
     def load_embedding_model(self) -> Word2Vec: ...
+
     def words_to_vec(self, words: Iterable[str], sentence_len: int) -> array: ...
