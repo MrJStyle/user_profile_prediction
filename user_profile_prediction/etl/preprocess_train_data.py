@@ -1,7 +1,7 @@
 import jieba
 import pandas as pd
 
-from typing import List, Iterable, Tuple, Generator
+from typing import List, Iterable, Tuple, Generator, Collection
 from numpy import array
 from pandas import DataFrame
 from tensorflow import Tensor
@@ -14,6 +14,8 @@ stop_words: StopwordsDataset = StopwordsDataset()
 
 
 class PreprocessTrainingData(BasePreprocess):
+    train_valid_test_weights: Collection
+
     age_label: List[int] = list()
     gender_label: List[int] = list()
     education_label: List[int] = list()
@@ -25,9 +27,10 @@ class PreprocessTrainingData(BasePreprocess):
 
         return df
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, train_valid_test_weights: Collection = (0.6, 0.2, 0.2)):
         super(PreprocessTrainingData, self).__init__(file_path)
         self.preprocess_data.columns = list()
+        self.train_valid_test_weights = train_valid_test_weights
 
     def split_sentence(self):
         for index, query in tqdm(self.data.iterrows()):
