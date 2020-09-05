@@ -1,9 +1,9 @@
 import os
-import numpy as np
-
 from typing import Iterable
-from numpy import array
+
+import numpy as np
 from gensim.models import Word2Vec
+from numpy import array
 
 from user_profile_prediction.etl import BaseEmbedding
 from user_profile_prediction.exceptions import NotInitError

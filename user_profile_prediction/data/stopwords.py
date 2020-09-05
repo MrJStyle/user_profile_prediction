@@ -1,7 +1,6 @@
 import os
-import pandas as pd
 
-from typing import List
+import pandas as pd
 from pandas import DataFrame
 
 current_file_path: str = os.path.abspath(__file__)

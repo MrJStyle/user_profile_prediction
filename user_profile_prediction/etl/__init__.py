@@ -1,17 +1,31 @@
 import os
+import tensorflow as tf
+from typing import List, Iterable, Tuple, Generator, NewType
 
 from gensim.models import Word2Vec
 from numpy import array
 from pandas import DataFrame
-from typing import List, Iterable, Tuple, Generator, TypeVar
 from tensorflow import Tensor
-
-# from user_profile_prediction.etl.embedding import Embedding
 
 current_file_path: str = os.path.abspath(__file__)
 dir_path: str = os.path.dirname(current_file_path)
 
-EmbeddingModel = TypeVar("EmbeddingModel")
+
+class BaseEmbedding:
+    MIN_COUNT: int
+    EMBEDDING_SIZE: int
+    EMBEDDING_MODEL_SAVED_PATH: str = os.path.join(dir_path, "embedding_model.txt")
+
+    _embedding_model: Word2Vec
+
+    def train_word2vec_model(self, sentences_with_spilt_words: Iterable[Iterable[str]]) -> Word2Vec: ...
+
+    def load_embedding_model(self) -> Word2Vec: ...
+
+    def words_to_vec(self, words: Iterable[str], sentence_len: int) -> array: ...
+
+
+EmbeddingModel = NewType("EmbeddingModel", BaseEmbedding)
 
 
 class BasePreprocess(object):
@@ -38,16 +52,6 @@ class BasePreprocess(object):
     @staticmethod
     def trans_data_to_tensor(data_iter: Generator) -> Generator[Tuple[Tensor, Tensor], None, None]: ...
 
-
-class BaseEmbedding:
-    MIN_COUNT: int
-    EMBEDDING_SIZE: int
-    EMBEDDING_MODEL_SAVED_PATH: str = os.path.join(dir_path, "embedding_model.txt")
-
-    _embedding_model: Word2Vec
-
-    def train_word2vec_model(self, sentences_with_spilt_words: Iterable[Iterable[str]]) -> Word2Vec: ...
-
-    def load_embedding_model(self) -> Word2Vec: ...
-
-    def words_to_vec(self, words: Iterable[str], sentence_len: int) -> array: ...
+    @staticmethod
+    def concatenate_tensor(tensors: List[Tensor]) -> Tensor:
+        return tf.concat(tensors, axis=0)

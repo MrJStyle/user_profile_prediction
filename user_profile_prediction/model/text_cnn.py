@@ -1,14 +1,11 @@
-import numpy as np
-import tensorflow as tf
-
 from typing import List
+
 from tensorflow import Tensor
 from tensorflow.data import Dataset
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Concatenate, Dense, Flatten, Embedding
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Concatenate, Dense, Flatten
 from tensorflow.keras.losses import CategoricalCrossentropy
-from tensorflow.keras.metrics import Mean
+from tensorflow.keras.optimizers import Adam
 
 
 class TextCNN(Model):

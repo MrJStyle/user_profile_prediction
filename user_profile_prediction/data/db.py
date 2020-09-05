@@ -1,9 +1,9 @@
 import asyncio
+
 import click
 import pandas as pd
-
-from pandas import DataFrame
 from motor.motor_asyncio import AsyncIOMotorClient
+from pandas import DataFrame
 
 
 @click.group()
