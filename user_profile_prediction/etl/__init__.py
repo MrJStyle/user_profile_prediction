@@ -1,6 +1,6 @@
 import os
 import tensorflow as tf
-from typing import List, Iterable, Tuple, Generator, NewType
+from typing import List, Iterable, Tuple, Generator, NewType, Dict
 
 from gensim.models import Word2Vec
 from numpy import array
@@ -34,8 +34,8 @@ class BasePreprocess(object):
 
     sentences_with_split_words: List = list()
 
-    def __init__(self, file_path: str):
-        self.data = self.load_from_csv(file_path)
+    def __init__(self, csv_file_path: str):
+        self.data = self.load_from_csv(csv_file_path)
 
     @classmethod
     def load_from_csv(cls, file_path: str) -> DataFrame: ...
@@ -50,8 +50,18 @@ class BasePreprocess(object):
     def education_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]: ...
 
     @staticmethod
-    def trans_data_to_tensor(data_iter: Generator) -> Generator[Tuple[Tensor, Tensor], None, None]: ...
+    def trans_data_to_tensor(data_iter: Generator) -> Generator[Tuple[Tensor, Tensor], None, None]:
+        for x, y in data_iter:
+            one_hot_y: Tensor = tf.one_hot(y, depth=tf.unique(y).y.shape[0])
+            yield tf.constant(x), one_hot_y
 
     @staticmethod
     def concatenate_tensor(tensors: List[Tensor]) -> Tensor:
         return tf.concat(tensors, axis=0)
+
+    @staticmethod
+    def class_weights_to_penalty_weights(class_weights: Dict[int, int], sample_nums: int) -> Dict[int, float]:
+        return {k: sample_nums / v for k, v in class_weights}
+
+
+PreprocessModel = NewType("PreprocessModel", BasePreprocess)
