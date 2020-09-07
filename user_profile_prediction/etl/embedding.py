@@ -30,7 +30,7 @@ class Embedding(BaseEmbedding):
         if os.path.exists(self.EMBEDDING_MODEL_SAVED_PATH):
             os.remove(self.EMBEDDING_MODEL_SAVED_PATH)
 
-        self.embedding_model.save(self.EMBEDDING_MODEL_SAVED_PATH)
+        self._embedding_model.save(self.EMBEDDING_MODEL_SAVED_PATH)
 
         return self._embedding_model
 
