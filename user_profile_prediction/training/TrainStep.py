@@ -99,11 +99,11 @@ if __name__ == "__main__":
     from user_profile_prediction.etl.preprocess_train_data import PreprocessTrainingData
     from user_profile_prediction.model.text_cnn import TextCNN
 
-    p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv")
+    p: PreprocessTrainingData = PreprocessTrainingData("/home/mrj/Sundry/user-profile/train.csv", embedding_size=10000)
     p.split_sentence()
 
-    e = Embedding(100, 5)
-    m = e.load_embedding_model()
+    e = Embedding(10000, 5)
+    m = e.train_word2vec_model(p.sentences_with_split_words)
 
     x_train, x_val, y_train, y_val = p.split_data(p.age_data_iter(e))
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     step = ModelTraining(text_cnn, e, optimizer, losses, metric)
 
-    step.build((None, 3, 100))
+    step.build((None, 3, 10000))
     step.compile()
 
     step.fit(x_train, y_train, x_val, y_val, 100, 2000)

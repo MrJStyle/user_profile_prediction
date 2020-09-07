@@ -40,7 +40,7 @@ class TextCNN(Model):
 
 if __name__ == "__main__":
     from user_profile_prediction.etl.preprocess_train_data import PreprocessTrainingData
-    p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv")
+    p = PreprocessTrainingData("/home/mrj/Sundry/train.csv")
     model = p.train_word2vec_model()
 
     train_x, train_y = [], []
