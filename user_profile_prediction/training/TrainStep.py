@@ -91,6 +91,8 @@ class ModelTraining:
 
 
 if __name__ == "__main__":
+    import os
+    import pickle
     from tensorflow.keras.optimizers import Adam
     from tensorflow.keras.losses import CategoricalCrossentropy
     from tensorflow.keras.metrics import Mean, CategoricalAccuracy
@@ -99,23 +101,37 @@ if __name__ == "__main__":
     from user_profile_prediction.etl.preprocess_train_data import PreprocessTrainingData
     from user_profile_prediction.model.text_cnn import TextCNN
 
-    p: PreprocessTrainingData = PreprocessTrainingData("/home/mrj/Sundry/user-profile/train.csv", embedding_size=10000)
+    p: PreprocessTrainingData = PreprocessTrainingData(
+        "/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv", embedding_size=500, sentence_len=100)
     p.split_sentence()
 
-    e = Embedding(10000, 5)
+    # path = os.path.join(os.path.dirname(__file__), "preprocess.pkl")
+    # if os.path.exists(path):
+    #     with open(path, "rb") as f:
+    #         p = pickle.load(f)
+    # else:
+    #     with open(path, "wb") as f:
+    #         p: PreprocessTrainingData = PreprocessTrainingData(
+    #             "/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv", embedding_size=500)
+    #         p.split_sentence()
+    #
+    #         pickle.dump(p, f)
+
+    e = Embedding(500, 10)
     m = e.train_word2vec_model(p.sentences_with_split_words)
+    # m = e.load_embedding_model()
 
     x_train, x_val, y_train, y_val = p.split_data(p.age_data_iter(e))
 
-    text_cnn = TextCNN(7)
+    text_cnn = TextCNN(6)
 
-    optimizer: Adam = Adam(learning_rate=1e-2)
+    optimizer: Adam = Adam(learning_rate=1e-3)
     losses: CategoricalCrossentropy = CategoricalCrossentropy()
     metric = CategoricalAccuracy()
 
     step = ModelTraining(text_cnn, e, optimizer, losses, metric)
 
-    step.build((None, 3, 10000))
+    step.build((None, 100, 500))
     step.compile()
 
-    step.fit(x_train, y_train, x_val, y_val, 100, 2000)
+    step.fit(x_train, y_train, x_val, y_val, 500, 200)

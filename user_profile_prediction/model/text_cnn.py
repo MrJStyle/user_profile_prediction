@@ -14,25 +14,30 @@ class TextCNN(Model):
         self.class_num: int = class_num
 
     def build(self, input_shape) -> None:
-        self.conv_1: Conv1D = Conv1D(filters=128, kernel_size=1, activation="relu", name="conv_1")
+        self.conv_1: Conv1D = Conv1D(filters=128, kernel_size=3, activation="relu", name="conv_1")
         self.pool_1: MaxPool1D = MaxPool1D(pool_size=2, strides=1, name="pool_1")
-        self.conv_2: Conv1D = Conv1D(filters=128, kernel_size=2, activation="relu", name="conv_2")
+        self.conv_2: Conv1D = Conv1D(filters=128, kernel_size=4, activation="relu", name="conv_2")
         self.pool_2: MaxPool1D = MaxPool1D(pool_size=2, strides=1, name="pool_2")
+        self.conv_3: Conv1D = Conv1D(filters=128, kernel_size=5, activation="relu", name="conv_3")
+        self.pool_3: MaxPool1D = MaxPool1D(pool_size=2, strides=1, name="pool_3")
         self.concatenate: Concatenate = Concatenate(axis=1)
         self.flatten: Flatten = Flatten()
+
+        self.dense1 = Dense(128, activation="sigmoid")
         self.dense: Dense = Dense(self.class_num, activation="softmax")
         super(TextCNN, self).build(input_shape)
 
     def call(self, inputs: Dataset, training=None, mask=None) -> Tensor:
-        convs: List[Tensor] = [self.conv_1(inputs), self.conv_2(inputs)]
-        pools: List[Tensor] = [self.pool_1(convs[0]), self.pool_2(convs[1])]
+        convs: List[Tensor] = [self.conv_1(inputs), self.conv_2(inputs), self.conv_3(inputs)]
+        pools: List[Tensor] = [self.pool_1(convs[0]), self.pool_2(convs[1]), self.pool_3(convs[2])]
         res: Tensor = self.concatenate(pools)
         res: Tensor = self.flatten(res)
+        res = self.dense1(res)
         res: Tensor = self.dense(res)
         return res
 
     def summary(self) -> None:
-        input: Input = Input(shape=(3, 100), name="Input")
+        input: Input = Input(shape=(100, 500), name="Input")
         output = self.call(input)
         model = Model(inputs=input, outputs=output, name="TextCNN")
         model.summary()

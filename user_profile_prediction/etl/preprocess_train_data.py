@@ -57,16 +57,29 @@ class PreprocessTrainingData(BasePreprocess):
     def split_sentence(self):
         for index, query in tqdm(self.data.iterrows()):
             # TODO 测试模型由于计算资源有限，只用1000个样本做测试
-            if index == 4000:
+            if index > 1000:
                 break
 
-            for sentence in query["Query_List"].split("\t"):
-                self.age_label.append(query["Age"])
-                self.gender_label.append(query["Gender"])
-                self.education_label.append(query["Education"])
+            if query["Age"] == 0:
+                continue
 
-                cut_words: List = jieba.lcut(sentence)
-                self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
+            query_list = query["Query_List"].replace("\t", " ")
+            self.age_label.append(query["Age"])
+            self.gender_label.append(query["Gender"])
+            self.education_label.append(query["Education"])
+            cut_words: List = jieba.lcut(query_list)
+            self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
+
+            # for sentence in query["Query_List"].split("\t"):
+            #     if query["Age"] == 0:
+            #         continue
+            #
+            #     self.age_label.append(query["Age"])
+            #     self.gender_label.append(query["Gender"])
+            #     self.education_label.append(query["Education"])
+            #
+            #     cut_words: List = jieba.lcut(sentence)
+            #     self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
 
         self.sample_num = len(self.sentences_with_split_words)
 
@@ -96,15 +109,15 @@ class PreprocessTrainingData(BasePreprocess):
 
     def age_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, 3), self.age_label[i]
+            yield model.words_to_vec(s, 100), self.age_label[i]
 
     def gender_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, 3), self.gender_label[i]
+            yield model.words_to_vec(s, 100), self.gender_label[i]
 
     def education_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, 3), self.education_label[i]
+            yield model.words_to_vec(s, 100), self.education_label[i]
 
     def split_data(self, data_iter: Generator) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         all_data: List[Tuple[array, int]]
