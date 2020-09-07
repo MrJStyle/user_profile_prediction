@@ -1,6 +1,7 @@
 import jieba
 import pandas as pd
 import numpy as np
+import tensorflow as tf
 
 from numpy import array
 from pandas import DataFrame
@@ -56,7 +57,7 @@ class PreprocessTrainingData(BasePreprocess):
     def split_sentence(self):
         for index, query in tqdm(self.data.iterrows()):
             # TODO 测试模型由于计算资源有限，只用1000个样本做测试
-            if index == 1000:
+            if index == 4000:
                 break
 
             for sentence in query["Query_List"].split("\t"):
@@ -107,10 +108,11 @@ class PreprocessTrainingData(BasePreprocess):
 
     def split_data(self, data_iter: Generator) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         all_data: List[Tuple[array, int]]
-        all_data = [(x.reshape(self.SENTENCE_LEN * self.EMBEDDING_SIZE), y) for x, y in data_iter]
+        all_data = [(x, y) for x, y in data_iter]
 
         x_train_raw, y_train_raw = zip(*all_data)
-        x_train_raw, y_train_raw = np.stack(x_train_raw, axis=0), array(y_train_raw)
+        x_train_raw, y_train_raw = \
+            np.stack(x_train_raw, axis=0).reshape(-1, self.SENTENCE_LEN * self.EMBEDDING_SIZE), array(y_train_raw)
 
         x_train: array
         x_val: array
