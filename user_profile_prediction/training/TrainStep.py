@@ -8,7 +8,7 @@ from user_profile_prediction.model import TrainingModel
 from user_profile_prediction.etl import EmbeddingModel
 
 
-class ModelTraining:
+class DeepLearningModelTraining:
     _training_model: TrainingModel
     _embedding_model: EmbeddingModel
     _optimizer: Optimizer

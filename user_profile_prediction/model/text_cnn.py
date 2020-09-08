@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     from user_profile_prediction.etl.embedding import Embedding
     from user_profile_prediction.etl.preprocess_train_data import PreprocessTrainingData
-    from user_profile_prediction.training.TrainStep import ModelTraining
+    from user_profile_prediction.training.TrainStep import DeepLearningModelTraining
 
     p: PreprocessTrainingData = PreprocessTrainingData(
         "/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv", embedding_size=500, sentence_len=400)
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     losses: CategoricalCrossentropy = CategoricalCrossentropy()
     metric = CategoricalAccuracy()
 
-    step = ModelTraining(text_cnn, e, optimizer, losses, metric)
+    step = DeepLearningModelTraining(text_cnn, e, optimizer, losses, metric)
 
     step.build((None, 400, 500))
     step.compile()
