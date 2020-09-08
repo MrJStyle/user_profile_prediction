@@ -54,10 +54,10 @@ if __name__ == "__main__":
 
     from user_profile_prediction.etl.embedding import Embedding
     from user_profile_prediction.etl.preprocess_train_data import PreprocessTrainingData
-    from user_profile_prediction.training.TrainStep import DeepLearningModelTraining
+    from user_profile_prediction.training.deep_learning_model_train_step import DeepLearningModelTraining
 
     p: PreprocessTrainingData = PreprocessTrainingData(
-        "/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv", embedding_size=500, sentence_len=400)
+        "/Volumes/Samsung_T5/Files/Document/china_hadoop/GroupProject/project_data/data/train.csv", embedding_size=500, sentence_len=400)
     p.split_sentence()
 
     e = Embedding(500, 10)

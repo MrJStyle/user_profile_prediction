@@ -153,7 +153,7 @@ if __name__ == "__main__":
     import tensorflow as tf
     from user_profile_prediction.etl.embedding import Embedding
 
-    p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/小象学院/GroupProject/project_data/data/train.csv")
+    p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/china_hadoop/GroupProject/project_data/data/train.csv")
     p.split_sentence()
 
     e = Embedding(100, 5)
