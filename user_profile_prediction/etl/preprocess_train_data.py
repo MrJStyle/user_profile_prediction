@@ -43,7 +43,7 @@ class PreprocessTrainingData(BasePreprocess):
     def __init__(
             self,
             csv_file_path: str,
-            train_valid_weights: Collection = (0.8, 0.2),
+            train_valid_weights: Collection = (0.9, 0.1),
             embedding_size: int = 100,
             sentence_len: int = 3
     ):
@@ -109,15 +109,15 @@ class PreprocessTrainingData(BasePreprocess):
 
     def age_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, 100), self.age_label[i]
+            yield model.words_to_vec(s, self.SENTENCE_LEN), self.age_label[i]
 
     def gender_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, 100), self.gender_label[i]
+            yield model.words_to_vec(s, self.SENTENCE_LEN), self.gender_label[i]
 
     def education_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, 100), self.education_label[i]
+            yield model.words_to_vec(s, self.SENTENCE_LEN), self.education_label[i]
 
     def split_data(self, data_iter: Generator) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         all_data: List[Tuple[array, int]]
