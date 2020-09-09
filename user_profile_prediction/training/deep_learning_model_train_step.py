@@ -30,7 +30,7 @@ class DeepLearningModelTraining:
         self._metric = metrics
 
     @property
-    def training_model(self):
+    def training_model(self) -> TrainingModel:
         return getattr(self, "_training_model", None)
 
     @training_model.setter
@@ -41,7 +41,7 @@ class DeepLearningModelTraining:
         self._training_model = model
 
     @property
-    def embedding_model(self):
+    def embedding_model(self) -> EmbeddingModel:
         return getattr(self, "_embedding_model", None)
 
     @embedding_model.setter

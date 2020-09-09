@@ -77,4 +77,11 @@ if __name__ == "__main__":
     step.build((None, 400, 500))
     step.compile()
 
-    step.fit(x_train, y_train, x_val, y_val, 500, 100)
+    step.fit(x_train, y_train, x_val, y_val, 4, 100)
+
+    import os
+    export_path: str = \
+        "/Users/luominzhi/Code/Python/user_profile_prediction/user_profile_prediction/saved_model/text_cnn"
+    version = "1"
+
+    step.training_model.save(os.path.join(export_path,  "{}".format(version)))
