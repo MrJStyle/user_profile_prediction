@@ -48,9 +48,11 @@ class TextCNN(Model):
 
 
 if __name__ == "__main__":
+    import datetime
     from tensorflow.keras.optimizers import Adam
     from tensorflow.keras.losses import CategoricalCrossentropy
     from tensorflow.keras.metrics import Mean, CategoricalAccuracy
+    from tensorflow.keras.callbacks import TensorBoard
 
     from user_profile_prediction.etl.embedding import Embedding
     from user_profile_prediction.etl.preprocess_train_data import PreprocessTrainingData
@@ -77,7 +79,10 @@ if __name__ == "__main__":
     step.build((None, 400, 500))
     step.compile()
 
-    step.fit(x_train, y_train, x_val, y_val, 4, 100)
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
+
+    step.fit(x_train, y_train, x_val, y_val, 4, 100, callbacks=[tensorboard_callback])
 
     import os
     export_path: str = \

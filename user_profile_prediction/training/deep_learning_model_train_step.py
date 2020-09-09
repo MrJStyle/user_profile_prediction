@@ -71,10 +71,12 @@ class DeepLearningModelTraining:
             x_val: Tensor,
             y_val: Tensor,
             epochs: int = 20,
-            batch: int = 100
+            batch: int = 100,
+            *args,
+            **kwargs
     ):
         self._training_model.fit(
-            x_train, y_train, validation_data=(x_val, y_val), epochs=epochs, batch_size=batch
+            x_train, y_train, validation_data=(x_val, y_val), epochs=epochs, batch_size=batch, *args, **kwargs
         )
 
     def single_train_workflow(self, features: Tensor, labels: Tensor):
