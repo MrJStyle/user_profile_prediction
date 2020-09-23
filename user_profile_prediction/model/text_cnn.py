@@ -7,7 +7,7 @@ from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Concatenate, Dense
 
 
 class TextCNN(Model):
-    def __init__(self, sentence_len: int, embedding_size, class_num: int):
+    def __init__(self, sentence_len: int, embedding_size: int, class_num: int):
         super(TextCNN, self).__init__()
         self.sentence_len: int = sentence_len
         self.embedding_size: int = embedding_size
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     text_cnn = TextCNN(400, 500, 6)
 
-    optimizer: Adam = Adam(learning_rate=1e-3)
+    optimizer: Adam = Adam(learning_rate=1e-2)
     losses: CategoricalCrossentropy = CategoricalCrossentropy()
     metric = CategoricalAccuracy()
 

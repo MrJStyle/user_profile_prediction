@@ -11,6 +11,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import RandomOverSampler
 from typing import List, Dict, Iterable, Tuple, Generator, Collection
+from tensorflow.keras.preprocessing.text import Tokenizer
 
 from user_profile_prediction.data.stopwords import StopwordsDataset
 from user_profile_prediction.etl import BasePreprocess, EmbeddingModel
@@ -32,6 +33,8 @@ class PreprocessTrainingData(BasePreprocess):
     age_label_weights: Dict[int, int]
     gender_label_weights: Dict[int, int]
     education_label_weights: Dict[int, int]
+
+    tokenizer: Tokenizer
 
     @classmethod
     def load_from_csv(cls, file_path: str) -> DataFrame:
@@ -57,35 +60,38 @@ class PreprocessTrainingData(BasePreprocess):
     def split_sentence(self):
         for index, query in tqdm(self.data.iterrows()):
             # TODO 测试模型由于计算资源有限，只用1000个样本做测试
-            if index > 1000:
+            if index > 10:
                 break
 
             if query["Age"] == 0:
                 continue
 
-            query_list = query["Query_List"].replace("\t", " ")
-            self.age_label.append(query["Age"])
-            self.gender_label.append(query["Gender"])
-            self.education_label.append(query["Education"])
-            cut_words: List = jieba.lcut(query_list)
-            self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
+            # query_list = query["Query_List"].replace("\t", " ")
+            # self.age_label.append(query["Age"])
+            # self.gender_label.append(query["Gender"])
+            # self.education_label.append(query["Education"])
+            # cut_words: List = jieba.lcut(query_list)
+            # self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
 
-            # for sentence in query["Query_List"].split("\t"):
-            #     if query["Age"] == 0:
-            #         continue
-            #
-            #     self.age_label.append(query["Age"])
-            #     self.gender_label.append(query["Gender"])
-            #     self.education_label.append(query["Education"])
-            #
-            #     cut_words: List = jieba.lcut(sentence)
-            #     self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
+            for sentence in query["Query_List"].split("\t"):
+                if query["Age"] == 0:
+                    continue
+
+                self.age_label.append(query["Age"])
+                # self.gender_label.append(query["Gender"])
+                # self.education_label.append(query["Education"])
+
+                cut_words: List = jieba.lcut(sentence)
+                self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
 
         self.sample_num = len(self.sentences_with_split_words)
 
         self.age_label_weights = dict(Counter(self.age_label))
         self.gender_label_weights = dict(Counter(self.gender_label))
         self.education_label_weights = dict(Counter(self.education_label))
+
+        self.tokenizer: Tokenizer = Tokenizer(oov_token="NaN", filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
+        self.tokenizer.fit_on_texts(self.sentences_with_split_words)
 
         return self.sentences_with_split_words
 
@@ -138,8 +144,8 @@ class PreprocessTrainingData(BasePreprocess):
             random_state=101
         )
 
-        ros: RandomOverSampler = RandomOverSampler(random_state=202)
-        x_train, y_train = ros.fit_resample(x_train, y_train)
+        # ros: RandomOverSampler = RandomOverSampler(random_state=202)
+        # x_train, y_train = ros.fit_resample(x_train, y_train)
 
         x_train: Tensor = constant(x_train.reshape(-1, self.SENTENCE_LEN, self.EMBEDDING_SIZE))
         x_val: Tensor = constant(x_val.reshape(-1, self.SENTENCE_LEN, self.EMBEDDING_SIZE))
