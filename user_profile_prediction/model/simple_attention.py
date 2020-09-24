@@ -66,7 +66,7 @@ if __name__ == "__main__":
     from user_profile_prediction.training.deep_learning_model_train_step import DeepLearningModelTraining
 
     p: PreprocessTrainingData = PreprocessTrainingData(
-        "/Volumes/Samsung_T5/Files/Document/china_hadoop/GroupProject/project_data/data/train.csv",
+        "/home/mrj/Sundry/user-profile/train.csv",
         embedding_size=10,
         sentence_len=15
     )

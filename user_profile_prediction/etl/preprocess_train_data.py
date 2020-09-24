@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import RandomOverSampler
 from typing import List, Dict, Iterable, Tuple, Generator, Collection
 from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 from user_profile_prediction.data.stopwords import StopwordsDataset
 from user_profile_prediction.etl import BasePreprocess, EmbeddingModel
@@ -90,10 +91,22 @@ class PreprocessTrainingData(BasePreprocess):
         self.gender_label_weights = dict(Counter(self.gender_label))
         self.education_label_weights = dict(Counter(self.education_label))
 
-        self.tokenizer: Tokenizer = Tokenizer(oov_token="NaN", filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
+        self.tokenizer: Tokenizer = Tokenizer(
+            num_words=1000,
+            oov_token="NaN",
+            filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
+        )
         self.tokenizer.fit_on_texts(self.sentences_with_split_words)
 
-        return self.sentences_with_split_words
+        sentences_with_split_words_sequence = self.tokenizer.texts_to_sequences(self.sentences_with_split_words)
+        self.sentences_with_split_words_sequence = pad_sequences(
+            sentences_with_split_words_sequence,
+            maxlen=self.EMBEDDING_SIZE,
+            padding="post",
+            truncating="post"
+        )
+
+        return self.sentences_with_split_words_sequence
 
     @property
     def train_valid_weights(self):
