@@ -61,7 +61,7 @@ class PreprocessTrainingData(BasePreprocess):
     def split_sentence(self):
         for index, query in tqdm(self.data.iterrows()):
             # TODO 测试模型由于计算资源有限，只用1000个样本做测试
-            if index > 10:
+            if index > 1000:
                 break
 
             if query["Age"] == 0:
@@ -91,22 +91,8 @@ class PreprocessTrainingData(BasePreprocess):
         self.gender_label_weights = dict(Counter(self.gender_label))
         self.education_label_weights = dict(Counter(self.education_label))
 
-        self.tokenizer: Tokenizer = Tokenizer(
-            num_words=1000,
-            oov_token="NaN",
-            filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
-        )
-        self.tokenizer.fit_on_texts(self.sentences_with_split_words)
 
-        sentences_with_split_words_sequence = self.tokenizer.texts_to_sequences(self.sentences_with_split_words)
-        self.sentences_with_split_words_sequence = pad_sequences(
-            sentences_with_split_words_sequence,
-            maxlen=self.EMBEDDING_SIZE,
-            padding="post",
-            truncating="post"
-        )
-
-        return self.sentences_with_split_words_sequence
+        return self.sentences_with_split_words
 
     @property
     def train_valid_weights(self):
@@ -127,8 +113,16 @@ class PreprocessTrainingData(BasePreprocess):
         return [w for w in words if w not in stop_words and w != " "]
 
     def age_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
+        self.tokenizer: Tokenizer = Tokenizer(
+            num_words=10000,
+            oov_token="NaN",
+            filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
+        )
+        self.tokenizer.fit_on_texts(self.sentences_with_split_words)
+
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, self.SENTENCE_LEN), self.age_label[i]
+            # yield model.words_to_vec(s, self.SENTENCE_LEN), self.age_label[i]
+            yield [x[0] if len(x) != 0 else 0 for x in self.tokenizer.texts_to_sequences(s)], self.age_label[i]
 
     def gender_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
@@ -143,8 +137,16 @@ class PreprocessTrainingData(BasePreprocess):
         all_data = [(x, y) for x, y in data_iter]
 
         x_train_raw, y_train_raw = zip(*all_data)
-        x_train_raw, y_train_raw = \
-            np.stack(x_train_raw, axis=0).reshape(-1, self.SENTENCE_LEN * self.EMBEDDING_SIZE), array(y_train_raw)
+        x_train_raw = pad_sequences(
+                x_train_raw,
+                maxlen=self.EMBEDDING_SIZE,
+                padding="post",
+                truncating="post"
+            )
+
+        y_train_raw = array(y_train_raw)
+        # x_train_raw, y_train_raw = \
+        #     np.stack(x_train_raw, axis=0).reshape(-1, self.SENTENCE_LEN * self.EMBEDDING_SIZE), array(y_train_raw)
 
         x_train: array
         x_val: array
@@ -160,8 +162,10 @@ class PreprocessTrainingData(BasePreprocess):
         # ros: RandomOverSampler = RandomOverSampler(random_state=202)
         # x_train, y_train = ros.fit_resample(x_train, y_train)
 
-        x_train: Tensor = constant(x_train.reshape(-1, self.SENTENCE_LEN, self.EMBEDDING_SIZE))
-        x_val: Tensor = constant(x_val.reshape(-1, self.SENTENCE_LEN, self.EMBEDDING_SIZE))
+        # x_train: Tensor = constant(x_train.reshape(-1, self.SENTENCE_LEN, self.EMBEDDING_SIZE))
+        # x_val: Tensor = constant(x_val.reshape(-1, self.SENTENCE_LEN, self.EMBEDDING_SIZE))
+        x_train: Tensor = constant(x_train)
+        x_val: Tensor = constant(x_val)
         y_train: Tensor = tf.one_hot(y_train, depth=np.unique(y_train_raw).__len__())
         y_val: Tensor = tf.one_hot(y_val, depth=np.unique(y_train_raw).__len__())
 

@@ -6,6 +6,7 @@ from gensim.models import Word2Vec
 from numpy import array
 from pandas import DataFrame
 from tensorflow import Tensor
+from tensorflow.python.keras.preprocessing.text import Tokenizer
 
 current_file_path: str = os.path.abspath(__file__)
 dir_path: str = os.path.dirname(current_file_path)
