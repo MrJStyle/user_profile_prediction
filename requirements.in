@@ -1,0 +1,19 @@
+-c fix-requirements.txt
+--index-url https://pypi.doubanio.com/simple
+
+ipython==7.16.1
+jieba==0.42.1
+jupyter==1.0.0
+matplotlib==3.3.1
+numpy==1.19.0
+pandas==1.0.5
+pymongo==3.11.0
+scikit-learn==0.23.1
+scipy==1.4.1
+tensorflow==2.2.0
+xgboost==1.1.1
+click==7.1.2
+motor==2.2.0
+tqdm==4.48.2
+gensim==3.8.3
+imblearn
