@@ -1,3 +1,4 @@
+import re
 import jieba
 import pandas as pd
 import numpy as np
@@ -60,31 +61,29 @@ class PreprocessTrainingData(BasePreprocess):
 
     def split_sentence(self):
         indexes = self.data.index.to_list()
-        np.random.shuffle(indexes)
+        # np.random.shuffle(indexes)
 
-        for index, query in tqdm(self.data.iloc[indexes[:1000]].iterrows()):
+        for index, query in tqdm(self.data.iloc[indexes[:10000]].iterrows()):
             # TODO 测试模型由于计算资源有限，只用1000个样本做测试
 
             if query["Age"] == 0:
                 continue
 
-            # query_list = query["Query_List"].replace("\t", " ")
-            # self.age_label.append(query["Age"])
-            # self.gender_label.append(query["Gender"])
-            # self.education_label.append(query["Education"])
-            # cut_words: List = jieba.lcut(query_list)
-            # self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
+            words = []
 
             for sentence in query["Query_List"].split("\t"):
-                if query["Age"] == 0:
-                    continue
+                res = re.findall("(?isu)(https?\://[a-zA-Z0-9\.\?/&\=\:]+)", sentence)
+                if not res:
+                    cut_words: List = jieba.lcut(sentence)
+                    cut_words = self.filter_stop_words(cut_words)
 
-                self.age_label.append(query["Age"])
-                # self.gender_label.append(query["Gender"])
-                # self.education_label.append(query["Education"])
+                    words.extend(cut_words)
 
-                cut_words: List = jieba.lcut(sentence)
-                self.sentences_with_split_words.append(self.filter_stop_words(cut_words))
+            self.sentences_with_split_words.append(words)
+
+            self.age_label.append(query["Age"])
+            # self.gender_label.append(query["Gender"])
+            # self.education_label.append(query["Education"])
 
         self.sample_num = len(self.sentences_with_split_words)
 

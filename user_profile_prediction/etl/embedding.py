@@ -1,8 +1,9 @@
 import os
-from typing import Iterable, Dict
+from typing import Iterable, Dict, List
 
 import numpy as np
-from gensim.models import Word2Vec
+from gensim.models import Word2Vec, Doc2Vec
+from gensim.models.doc2vec import TaggedDocument
 from keras_preprocessing.sequence import pad_sequences
 from numpy import array
 from tensorflow.keras.preprocessing.text import Tokenizer
@@ -34,7 +35,7 @@ class Embedding(BaseEmbedding):
             sentence_len: int = 5
     ) -> Word2Vec:
         self._embedding_model: Word2Vec = Word2Vec(
-            sentences_with_spilt_words, min_count=self.MIN_COUNT, size=self.EMBEDDING_SIZE, window=3
+            sentences_with_spilt_words, min_count=self.MIN_COUNT, size=self.EMBEDDING_SIZE, window=10
         )
 
         if os.path.exists(self.EMBEDDING_MODEL_SAVED_PATH):
@@ -68,6 +69,55 @@ class Embedding(BaseEmbedding):
                 continue
 
         return self._embedding_model
+
+    def train_doc2vec_model(
+            self,
+            sentences_with_spilt_words: Iterable[Iterable[str]],
+            tag_labels: List,
+            sentence_len: int = 5
+    ):
+        tag_labels = [[t] for t in tag_labels]
+        tag_documents: List[TaggedDocument] = list()
+
+        for d, l in zip(sentences_with_spilt_words, tag_labels):
+            tag_documents.append(TaggedDocument(d, l))
+
+        self._embedding_model: Doc2Vec = Doc2Vec(
+            tag_documents, min_count=self.MIN_COUNT, vector_size=self.EMBEDDING_SIZE, window=3
+        )
+
+        if os.path.exists(self.EMBEDDING_MODEL_SAVED_PATH):
+            os.remove(self.EMBEDDING_MODEL_SAVED_PATH)
+
+        self._embedding_model.save(self.EMBEDDING_MODEL_SAVED_PATH)
+
+        self.tokenizer: Tokenizer = Tokenizer(
+            num_words=10000,
+            oov_token="NaN",
+            filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
+        )
+        self.tokenizer.fit_on_texts(sentences_with_spilt_words)
+
+        sentences_with_split_words_sequence = self.tokenizer.texts_to_sequences(sentences_with_spilt_words)
+        self.sentences_with_split_words_sequence = pad_sequences(
+            sentences_with_split_words_sequence,
+            maxlen=sentence_len,
+            padding="post",
+            truncating="post"
+        )
+
+        self.word_index = self.tokenizer.word_index
+
+        self.embedding_matrix = np.zeros((len(self.word_index) + 1, self.EMBEDDING_SIZE))
+
+        for word, index in self.word_index.items():
+            try:
+                self.embedding_matrix[index] = self._embedding_model[word]
+            except Exception:
+                continue
+
+        return self._embedding_model
+
 
     def load_embedding_model(self) -> Word2Vec:
         self._embedding_model = Word2Vec.load(self.EMBEDDING_MODEL_SAVED_PATH)
