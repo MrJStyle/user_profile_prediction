@@ -36,7 +36,7 @@ class SimpleAttention(Model):
             name="bidirectional_2"
         )
 
-        self.dence_2: Dense = Dense(10, activation="relu", name="dense_2")
+        self.dence_2: Dense = Dense(100, activation="relu", name="dense_2")
         self.dence_3: Dense = Dense(self.class_num, activation="softmax", name="dense_3")
         super(SimpleAttention, self).build(input_shape)
 
@@ -75,17 +75,17 @@ if __name__ == "__main__":
 
     p: PreprocessTrainingData = PreprocessTrainingData(
         "/Volumes/Samsung_T5/Files/Document/china_hadoop/GroupProject/project_data/data/train.csv",
-        embedding_size=10,
-        sentence_len=10
+        embedding_size=200,
+        sentence_len=5
     )
     p.split_sentence()
 
-    e = E(10, 1)
+    e = E(200, 1)
     m = e.train_word2vec_model(p.sentences_with_split_words)
 
     x_train, x_val, y_train, y_val = p.split_data(p.age_data_iter(e))
 
-    attention = SimpleAttention(10, 10, 6, e.embedding_matrix)
+    attention = SimpleAttention(5, 200, 6, e.embedding_matrix)
 
     optimizer: SGD = SGD(learning_rate=1e-3)
     losses: CategoricalCrossentropy = CategoricalCrossentropy()
@@ -93,6 +93,6 @@ if __name__ == "__main__":
 
     step = DeepLearningModelTraining(attention, e, optimizer, losses, metric)
 
-    step.build((None, 10, ))
+    step.build((None, 5, ))
     step.compile()
     step.fit(x_train, y_train, x_val, y_val, epochs=30, batch=500)

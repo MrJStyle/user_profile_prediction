@@ -59,10 +59,11 @@ class PreprocessTrainingData(BasePreprocess):
         self.SENTENCE_LEN = sentence_len
 
     def split_sentence(self):
-        for index, query in tqdm(self.data.iterrows()):
+        indexes = self.data.index.to_list()
+        np.random.shuffle(indexes)
+
+        for index, query in tqdm(self.data.iloc[indexes[:1000]].iterrows()):
             # TODO 测试模型由于计算资源有限，只用1000个样本做测试
-            if index > 1000:
-                break
 
             if query["Age"] == 0:
                 continue
@@ -132,14 +133,14 @@ class PreprocessTrainingData(BasePreprocess):
         for i, s in enumerate(self.sentences_with_split_words):
             yield model.words_to_vec(s, self.SENTENCE_LEN), self.education_label[i]
 
-    def split_data(self, data_iter: Generator) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    def split_data(self, data_iter: Generator, one_hot: bool = True) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         all_data: List[Tuple[array, int]]
         all_data = [(x, y) for x, y in data_iter]
 
         x_train_raw, y_train_raw = zip(*all_data)
         x_train_raw = pad_sequences(
                 x_train_raw,
-                maxlen=self.EMBEDDING_SIZE,
+                maxlen=self.SENTENCE_LEN,
                 padding="post",
                 truncating="post"
             )
@@ -166,8 +167,9 @@ class PreprocessTrainingData(BasePreprocess):
         # x_val: Tensor = constant(x_val.reshape(-1, self.SENTENCE_LEN, self.EMBEDDING_SIZE))
         x_train: Tensor = constant(x_train)
         x_val: Tensor = constant(x_val)
-        y_train: Tensor = tf.one_hot(y_train, depth=np.unique(y_train_raw).__len__())
-        y_val: Tensor = tf.one_hot(y_val, depth=np.unique(y_train_raw).__len__())
+        if one_hot:
+            y_train: Tensor = tf.one_hot(y_train, depth=np.unique(y_train_raw).__len__())
+            y_val: Tensor = tf.one_hot(y_val, depth=np.unique(y_train_raw).__len__())
 
         return x_train, x_val, y_train, y_val
 

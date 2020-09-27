@@ -37,7 +37,7 @@ class BasePreprocess(object):
     sentences_with_split_words_sequence: List[List[int]]
 
     def __init__(self, csv_file_path: str):
-        self.data = self.load_from_csv(csv_file_path)
+        self.data: DataFrame = self.load_from_csv(csv_file_path)
 
     @classmethod
     def load_from_csv(cls, file_path: str) -> DataFrame: ...

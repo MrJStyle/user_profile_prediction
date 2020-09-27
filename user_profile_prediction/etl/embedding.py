@@ -30,10 +30,11 @@ class Embedding(BaseEmbedding):
 
     def train_word2vec_model(
             self,
-            sentences_with_spilt_words: Iterable[Iterable[str]]
+            sentences_with_spilt_words: Iterable[Iterable[str]],
+            sentence_len: int = 5
     ) -> Word2Vec:
         self._embedding_model: Word2Vec = Word2Vec(
-            sentences_with_spilt_words, min_count=self.MIN_COUNT, size=self.EMBEDDING_SIZE
+            sentences_with_spilt_words, min_count=self.MIN_COUNT, size=self.EMBEDDING_SIZE, window=3
         )
 
         if os.path.exists(self.EMBEDDING_MODEL_SAVED_PATH):
@@ -51,7 +52,7 @@ class Embedding(BaseEmbedding):
         sentences_with_split_words_sequence = self.tokenizer.texts_to_sequences(sentences_with_spilt_words)
         self.sentences_with_split_words_sequence = pad_sequences(
             sentences_with_split_words_sequence,
-            maxlen=self.EMBEDDING_SIZE,
+            maxlen=sentence_len,
             padding="post",
             truncating="post"
         )
