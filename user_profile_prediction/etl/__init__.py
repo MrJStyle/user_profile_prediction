@@ -6,6 +6,7 @@ from gensim.models import Word2Vec
 from numpy import array
 from pandas import DataFrame
 from tensorflow import Tensor
+from tensorflow.python.keras.preprocessing.text import Tokenizer
 
 current_file_path: str = os.path.abspath(__file__)
 dir_path: str = os.path.dirname(current_file_path)
@@ -33,9 +34,10 @@ class BasePreprocess(object):
     preprocess_data: DataFrame = DataFrame()
 
     sentences_with_split_words: List = list()
+    sentences_with_split_words_sequence: List[List[int]]
 
     def __init__(self, csv_file_path: str):
-        self.data = self.load_from_csv(csv_file_path)
+        self.data: DataFrame = self.load_from_csv(csv_file_path)
 
     @classmethod
     def load_from_csv(cls, file_path: str) -> DataFrame: ...
