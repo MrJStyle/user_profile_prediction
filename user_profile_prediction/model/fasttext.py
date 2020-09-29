@@ -56,28 +56,37 @@ if __name__ == "__main__":
     from user_profile_prediction.etl.preprocess_train_data import PreprocessTrainingData
     from user_profile_prediction.training.deep_learning_model_train_step import DeepLearningModelTraining
 
+    EMBEDDING_SIZE = 150
+    SENTENCE_LEN = 400
+    MIN_COUNT = 1
+    CLASS_NUM = 6
+
+    LEARNING_RATE = 1e-3
+    EPOCHS = 50
+    BATCH_SIZE = 100
+
     p: PreprocessTrainingData = PreprocessTrainingData(
-        "/Volumes/Samsung_T5/Files/Document/china_hadoop/GroupProject/project_data/data/train.csv",
-        embedding_size=150,
-        sentence_len=400)
+        "/home/mrj/Sundry/user-profile/train.csv",
+        embedding_size=EMBEDDING_SIZE,
+        sentence_len=SENTENCE_LEN)
     p.split_sentence()
 
-    e = E(150, 1)
+    e = E(EMBEDDING_SIZE, MIN_COUNT)
     m = e.train_doc2vec_model(p.sentences_with_split_words, p.age_label)
 
     # m = e.load_embedding_model()
 
     x_train, x_val, y_train, y_val = p.split_data(p.age_data_iter(e))
 
-    text_cnn = FastText(400, 150, 6, e.embedding_matrix)
+    text_cnn = FastText(SENTENCE_LEN, EMBEDDING_SIZE, CLASS_NUM, e.embedding_matrix)
 
-    optimizer: Adam = Adam(learning_rate=5 * 1e-4)
+    optimizer: Adam = Adam(learning_rate=LEARNING_RATE)
     losses: CategoricalCrossentropy = CategoricalCrossentropy()
     metric = CategoricalAccuracy()
 
     step = DeepLearningModelTraining(text_cnn, e, optimizer, losses, metric)
 
-    step.build((None, 400, ))
+    step.build((None, SENTENCE_LEN, ))
     step.compile()
 
     log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -88,7 +97,7 @@ if __name__ == "__main__":
         y_train,
         x_val,
         y_val,
-        epochs=50,
-        batch=100,
+        epochs=EPOCHS,
+        batch=BATCH_SIZE,
         callbacks=[tensorboard_callback]
     )
