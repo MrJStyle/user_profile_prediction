@@ -1,5 +1,7 @@
 import re
 from collections import Counter
+from itertools import islice
+from pathlib import Path
 from typing import List, Dict, Iterable, Tuple, Generator, Collection
 
 import jieba
@@ -38,6 +40,8 @@ class PreprocessTrainingData(BasePreprocess):
 
     tokenizer: Tokenizer
 
+    saved_path: str = Path("../data/train_split_words.csv").absolute().__str__()
+
     @classmethod
     def load_from_csv(cls, file_path: str) -> DataFrame:
         df: DataFrame = pd.read_csv(file_path, sep="###__###", header=None)
@@ -65,10 +69,15 @@ class PreprocessTrainingData(BasePreprocess):
         indexes = self.data.index.to_list()
         # np.random.shuffle(indexes)
 
-        for index, query in tqdm(self.data.iloc[indexes[:10000]].iterrows()):
+        saved_path: Path = Path(self.saved_path)
+        if saved_path.exists():
+            self.load_split_words_csv()
+            return self.sentences_with_split_words
+
+        for index, query in tqdm(self.data.iloc[indexes[:]].iterrows()):
             # TODO 测试模型由于计算资源有限，只用1000个样本做测试
 
-            if query["Age"] == 0:
+            if query["Age"] == 0 or query["Gender"] == 0 or query["Education"] == 0:
                 continue
 
             words = []
@@ -84,8 +93,8 @@ class PreprocessTrainingData(BasePreprocess):
             self.sentences_with_split_words.append(words)
 
             self.age_label.append(query["Age"])
-            # self.gender_label.append(query["Gender"])
-            # self.education_label.append(query["Education"])
+            self.gender_label.append(query["Gender"])
+            self.education_label.append(query["Education"])
 
         self.sample_num = len(self.sentences_with_split_words)
 
@@ -93,7 +102,36 @@ class PreprocessTrainingData(BasePreprocess):
         self.gender_label_weights = dict(Counter(self.gender_label))
         self.education_label_weights = dict(Counter(self.education_label))
 
+        self.save_split_words_csv()
+
         return self.sentences_with_split_words
+
+    def save_split_words_csv(self) -> None:
+        with open(self.saved_path, "w") as f:
+            f.write("Query_List, Age, Gender, Education\n")
+
+            for i in range(len(self.sentences_with_split_words)):
+                f.write(
+                    "{}, {}, {}, {}\n".format(
+                        ' '.join(self.sentences_with_split_words[i]),
+                        self.age_label[i],
+                        self.gender_label[i],
+                        self.education_label[i]
+                    )
+                )
+
+    def load_split_words_csv(self) -> None:
+        line: str
+
+        with open(self.saved_path, "r") as f:
+            for line in islice(f, 1, None):
+                if line.endswith("\n"):
+                    line = line[:-1]
+                query_list, age, gender, edu = line.split(",")
+                self.sentences_with_split_words.append(query_list.split(" "))
+                self.age_label.append(int(age))
+                self.gender_label.append(int(gender))
+                self.education_label.append(int(edu))
 
     @property
     def train_valid_weights(self):
@@ -178,9 +216,6 @@ if __name__ == "__main__":
 
     p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/china_hadoop/GroupProject/project_data/data/train.csv")
     p.split_sentence()
-
-
-
     # a, b, c, d = p.split_data(p.age_data_iter())
 
     print("finish")
