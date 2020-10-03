@@ -1,26 +1,27 @@
-from array import array
 from typing import List
 
 from tensorflow import Tensor
 from tensorflow.data import Dataset
 from tensorflow.keras import Model, regularizers
-from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Concatenate, Dense, Flatten, Dropout, Embedding, GlobalMaxPool1D
+from tensorflow.keras.layers import Input, Conv1D, Concatenate, Dense, Flatten, Dropout, Embedding, \
+    GlobalMaxPool1D
 
 
 class TextCNN(Model):
-    def __init__(self, sentence_len: int, embedding_size: int, class_num: int, embedding_matrix: array):
+    def __init__(self, sentence_len: int, embedding_size: int, class_num: int, vocabulary_size: int):
         super(TextCNN, self).__init__()
         self.sentence_len: int = sentence_len
         self.embedding_size: int = embedding_size
         self.class_num: int = class_num
-        self.embedding_matrix: array = embedding_matrix
+        self.vocabulary_size: int = vocabulary_size
 
     def build(self, input_shape) -> None:
-        self.embedding: Embedding = Embedding(input_dim=self.embedding_matrix.shape[0],
-                                             output_dim=self.embedding_matrix.shape[1],
-                                             weights=[self.embedding_matrix],
-                                             input_length=self.sentence_len,
-                                             trainable=False)
+        self.embedding: Embedding = Embedding(
+            input_dim=self.vocabulary_size,
+            output_dim=self.embedding_size,
+            input_length=self.sentence_len,
+            trainable=False
+        )
         self.conv_1: Conv1D = Conv1D(filters=16, kernel_size=3, activation="relu", name="conv_1")
         # self.pool_1: MaxPool1D = MaxPool1D(pool_size=2, strides=1, name="pool_1")
         self.pool_1 = GlobalMaxPool1D(name="pool_1")
@@ -70,7 +71,7 @@ if __name__ == "__main__":
     import datetime
     from tensorflow.keras.optimizers import Adam
     from tensorflow.keras.losses import CategoricalCrossentropy
-    from tensorflow.keras.metrics import Mean, CategoricalAccuracy
+    from tensorflow.keras.metrics import CategoricalAccuracy
     from tensorflow.keras.callbacks import TensorBoard
 
     from user_profile_prediction.etl.embedding import Embedding as E

@@ -1,19 +1,17 @@
 import re
-import jieba
-import pandas as pd
-import numpy as np
-import tensorflow as tf
+from collections import Counter
+from typing import List, Dict, Iterable, Tuple, Generator, Collection
 
+import jieba
+import numpy as np
+import pandas as pd
 from numpy import array
 from pandas import DataFrame
-from tensorflow import Tensor, constant
-from collections import Counter
-from tqdm import tqdm
 from sklearn.model_selection import train_test_split
-from imblearn.over_sampling import RandomOverSampler
-from typing import List, Dict, Iterable, Tuple, Generator, Collection
-from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow import Tensor, constant
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tqdm import tqdm
 
 from user_profile_prediction.data.stopwords import StopwordsDataset
 from user_profile_prediction.etl import BasePreprocess, EmbeddingModel
@@ -24,6 +22,8 @@ stop_words: StopwordsDataset = StopwordsDataset()
 class PreprocessTrainingData(BasePreprocess):
     EMBEDDING_SIZE: int
     SENTENCE_LEN: int
+
+    VOCABULARY_SIZE: int
 
     sample_num: int
     train_valid_test_weights: Collection
@@ -50,7 +50,8 @@ class PreprocessTrainingData(BasePreprocess):
             csv_file_path: str,
             train_valid_weights: Collection = (0.9, 0.1),
             embedding_size: int = 100,
-            sentence_len: int = 3
+            sentence_len: int = 3,
+            vocabulary_size: int = 10000
     ):
         super(PreprocessTrainingData, self).__init__(csv_file_path)
         self.preprocess_data.columns = list()
@@ -58,6 +59,7 @@ class PreprocessTrainingData(BasePreprocess):
 
         self.EMBEDDING_SIZE = embedding_size
         self.SENTENCE_LEN = sentence_len
+        self.VOCABULARY_SIZE = vocabulary_size
 
     def split_sentence(self):
         indexes = self.data.index.to_list()
@@ -91,7 +93,6 @@ class PreprocessTrainingData(BasePreprocess):
         self.gender_label_weights = dict(Counter(self.gender_label))
         self.education_label_weights = dict(Counter(self.education_label))
 
-
         return self.sentences_with_split_words
 
     @property
@@ -112,16 +113,15 @@ class PreprocessTrainingData(BasePreprocess):
     def filter_stop_words(words: Iterable) -> List:
         return [w for w in words if w not in stop_words and w != " "]
 
-    def age_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
+    def age_data_iter(self) -> Generator[Tuple[array, int], None, None]:
         self.tokenizer: Tokenizer = Tokenizer(
-            num_words=10000,
+            num_words=self.VOCABULARY_SIZE,
             oov_token="NaN",
             filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
         )
         self.tokenizer.fit_on_texts(self.sentences_with_split_words)
 
         for i, s in enumerate(self.sentences_with_split_words):
-            # yield model.words_to_vec(s, self.SENTENCE_LEN), self.age_label[i]
             yield [x[0] if len(x) != 0 else 0 for x in self.tokenizer.texts_to_sequences(s)], self.age_label[i]
 
     def gender_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
@@ -175,14 +175,12 @@ class PreprocessTrainingData(BasePreprocess):
 
 if __name__ == "__main__":
     import tensorflow as tf
-    from user_profile_prediction.etl.embedding import Embedding
 
     p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/china_hadoop/GroupProject/project_data/data/train.csv")
     p.split_sentence()
 
-    e = Embedding(100, 5)
-    m = e.load_embedding_model()
 
-    a, b, c, d = p.split_data(p.age_data_iter(e))
+
+    # a, b, c, d = p.split_data(p.age_data_iter())
 
     print("finish")

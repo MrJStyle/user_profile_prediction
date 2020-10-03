@@ -1,6 +1,3 @@
-from array import array
-from typing import List
-
 from tensorflow import Tensor
 from tensorflow.data import Dataset
 from tensorflow.keras import Model, regularizers
@@ -8,18 +5,17 @@ from tensorflow.keras.layers import Input, Dense, Dropout, Embedding, GlobalAver
 
 
 class FastText(Model):
-    def __init__(self, sentence_len: int, embedding_size: int, class_num: int, embedding_matrix: array):
+    def __init__(self, sentence_len: int, embedding_size: int, class_num: int, vocabulary_size: int):
         super(FastText, self).__init__()
         self.sentence_len: int = sentence_len
         self.embedding_size: int = embedding_size
         self.class_num: int = class_num
-        self.embedding_matrix: array = embedding_matrix
+        self.vocabulary_size: int = vocabulary_size
 
     def build(self, input_shape) -> None:
         self.embedding: Embedding = Embedding(
-            input_dim=self.embedding_matrix.shape[0],
-            output_dim=self.embedding_matrix.shape[1],
-            weights=[self.embedding_matrix],
+            input_dim=self.vocabulary_size,
+            output_dim=self.embedding_size,
             input_length=self.sentence_len,
             trainable=False
         )
@@ -49,7 +45,7 @@ if __name__ == "__main__":
     import datetime
     from tensorflow.keras.optimizers import Adam
     from tensorflow.keras.losses import CategoricalCrossentropy
-    from tensorflow.keras.metrics import Mean, CategoricalAccuracy
+    from tensorflow.keras.metrics import CategoricalAccuracy
     from tensorflow.keras.callbacks import TensorBoard
 
     from user_profile_prediction.etl.embedding import Embedding as E
@@ -76,7 +72,7 @@ if __name__ == "__main__":
 
     # m = e.load_embedding_model()
 
-    x_train, x_val, y_train, y_val = p.split_data(p.age_data_iter(e))
+    x_train, x_val, y_train, y_val = p.split_data(p.age_data_iter())
 
     text_cnn = FastText(SENTENCE_LEN, EMBEDDING_SIZE, CLASS_NUM, e.embedding_matrix)
 
