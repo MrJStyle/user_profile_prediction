@@ -40,7 +40,8 @@ class PreprocessTrainingData(BasePreprocess):
 
     tokenizer: Tokenizer
 
-    saved_path: str = Path("../data/train_split_words.csv").absolute().__str__()
+    path_obj: Path = Path(__file__).parent.parent / "data" / "train_split_words.csv"
+    saved_path: str = path_obj.absolute().__str__()
 
     @classmethod
     def load_from_csv(cls, file_path: str) -> DataFrame:
