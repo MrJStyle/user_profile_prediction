@@ -7,6 +7,7 @@ from typing import List, Dict, Iterable, Tuple, Generator, Collection
 import jieba
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from numpy import array
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
@@ -72,8 +73,15 @@ class PreprocessTrainingData(BasePreprocess):
 
         saved_path: Path = Path(self.saved_path)
         if saved_path.exists():
+            print(f"loading split_words.csv from '{self.saved_path}'")
             self.load_split_words_csv()
+            print("finish loading split_words.csv")
+
+            static: List = [len(sent) for sent in self.sentences_with_split_words]
+            print(f"The average length of sentence is {sum(static) / len(static)}")
             return self.sentences_with_split_words
+
+        print("start to split words by jieba")
 
         for index, query in tqdm(self.data.iloc[indexes[:]].iterrows()):
             # TODO 测试模型由于计算资源有限，只用1000个样本做测试
@@ -102,8 +110,14 @@ class PreprocessTrainingData(BasePreprocess):
         self.age_label_weights = dict(Counter(self.age_label))
         self.gender_label_weights = dict(Counter(self.gender_label))
         self.education_label_weights = dict(Counter(self.education_label))
+        print("finish splitting words")
 
+        print(f"saving split_words.csv to '{self.saved_path}'")
         self.save_split_words_csv()
+        print("finish saving split_words.csv")
+
+        static: List = [len(sent) for sent in self.sentences_with_split_words]
+        print(f"The average length of sentence is {sum(static) / len(static)}")
 
         return self.sentences_with_split_words
 
@@ -153,12 +167,15 @@ class PreprocessTrainingData(BasePreprocess):
         return [w for w in words if w not in stop_words and w != " "]
 
     def age_data_iter(self) -> Generator[Tuple[array, int], None, None]:
+        print("Tokenizing words")
         self.tokenizer: Tokenizer = Tokenizer(
             num_words=self.VOCABULARY_SIZE,
             oov_token="NaN",
             filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
         )
         self.tokenizer.fit_on_texts(self.sentences_with_split_words)
+
+        print(f"Numbers of total words is {len(self.tokenizer.word_index)}")
 
         for i, s in enumerate(self.sentences_with_split_words):
             yield [x[0] if len(x) != 0 else 0 for x in self.tokenizer.texts_to_sequences(s)], self.age_label[i]
@@ -176,12 +193,14 @@ class PreprocessTrainingData(BasePreprocess):
         all_data = [(x, y) for x, y in data_iter]
 
         x_train_raw, y_train_raw = zip(*all_data)
+
+        print("Padding sentences")
         x_train_raw = pad_sequences(
-                x_train_raw,
-                maxlen=self.SENTENCE_LEN,
-                padding="post",
-                truncating="post"
-            )
+            x_train_raw,
+            maxlen=self.SENTENCE_LEN,
+            padding="post",
+            truncating="post"
+        )
 
         y_train_raw = array(y_train_raw)
         # x_train_raw, y_train_raw = \
@@ -205,6 +224,7 @@ class PreprocessTrainingData(BasePreprocess):
         # x_val: Tensor = constant(x_val.reshape(-1, self.SENTENCE_LEN, self.EMBEDDING_SIZE))
         x_train: Tensor = constant(x_train)
         x_val: Tensor = constant(x_val)
+
         if one_hot:
             y_train: Tensor = tf.one_hot(y_train, depth=np.unique(y_train_raw).__len__())
             y_val: Tensor = tf.one_hot(y_val, depth=np.unique(y_train_raw).__len__())
@@ -213,8 +233,6 @@ class PreprocessTrainingData(BasePreprocess):
 
 
 if __name__ == "__main__":
-    import tensorflow as tf
-
     p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/china_hadoop/GroupProject/project_data/data/train.csv")
     p.split_sentence()
     # a, b, c, d = p.split_data(p.age_data_iter())
