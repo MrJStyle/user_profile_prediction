@@ -20,22 +20,22 @@ class TextCNN(Model):
             input_dim=self.vocabulary_size,
             output_dim=self.embedding_size,
             input_length=self.sentence_len,
-            trainable=False
+            trainable=True
         )
-        self.conv_1: Conv1D = Conv1D(filters=16, kernel_size=3, activation="relu", name="conv_1")
+        self.conv_1: Conv1D = Conv1D(filters=32, kernel_size=3, activation="relu", name="conv_1")
         # self.pool_1: MaxPool1D = MaxPool1D(pool_size=2, strides=1, name="pool_1")
         self.pool_1 = GlobalMaxPool1D(name="pool_1")
-        self.conv_2: Conv1D = Conv1D(filters=16, kernel_size=4, activation="relu", name="conv_2")
+        self.conv_2: Conv1D = Conv1D(filters=32, kernel_size=4, activation="relu", name="conv_2")
         # self.pool_2: MaxPool1D = MaxPool1D(pool_size=2, strides=1, name="pool_2")
         self.pool_2 = GlobalMaxPool1D(name="pool_2")
-        self.conv_3: Conv1D = Conv1D(filters=16, kernel_size=5, activation="relu", name="conv_3")
+        self.conv_3: Conv1D = Conv1D(filters=32, kernel_size=5, activation="relu", name="conv_3")
         # self.pool_3: MaxPool1D = MaxPool1D(pool_size=2, strides=1, name="pool_3")
         self.pool_3 = GlobalMaxPool1D(name="pool_3")
         self.concatenate: Concatenate = Concatenate(axis=1)
         self.flatten: Flatten = Flatten()
 
         self.dropout_1: Dropout = Dropout(0.5, name="dropout_1")
-        self.dense1 = Dense(32, activation="sigmoid", kernel_regularizer=regularizers.l2(0.001))
+        self.dense1 = Dense(64, activation="sigmoid", kernel_regularizer=regularizers.l2(0.001))
         self.dropout_2: Dropout = Dropout(0.5, name="dropout_2")
         self.dense: Dense = Dense(self.class_num, activation="softmax", kernel_regularizer=regularizers.l2(0.001))
         super(TextCNN, self).build(input_shape)
