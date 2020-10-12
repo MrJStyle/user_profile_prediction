@@ -62,7 +62,7 @@ class TextCNN(Model):
         self.conv_2: Conv1D = Conv1D(filters=self.conv_filter, kernel_size=4, activation="relu", name="conv_2")
         self.conv_3: Conv1D = Conv1D(filters=self.conv_filter, kernel_size=5, activation="relu", name="conv_3")
 
-        if self.global_max_pool:
+        if not self.global_max_pool:
             self.pool_1: MaxPool1D = MaxPool1D(pool_size=self.pool_size, strides=1, name="pool_1")
             self.pool_2: MaxPool1D = MaxPool1D(pool_size=self.pool_size, strides=1, name="pool_2")
             self.pool_3: MaxPool1D = MaxPool1D(pool_size=self.pool_size, strides=1, name="pool_3")
