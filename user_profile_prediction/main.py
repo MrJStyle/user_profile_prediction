@@ -150,4 +150,4 @@ def training_model(
 
 
 if __name__ == "__main__":
-    training_model()
+    cli()
