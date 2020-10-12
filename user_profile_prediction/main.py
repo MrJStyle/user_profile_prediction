@@ -80,7 +80,6 @@ def training_model(
         l2_regularization: float,
         vocabulary_size: int,
         min_count: int,
-        text_cnn,
         class_num: int,
         label_name: int,
         learning_rate: int,
