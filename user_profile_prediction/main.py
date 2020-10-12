@@ -2,6 +2,7 @@ import datetime
 from typing import Optional
 
 import click
+import tensorflow as tf
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.metrics import CategoricalAccuracy
@@ -42,30 +43,50 @@ class Model(object):
         raise ValueError("error model name")
 
 
-@click.command()
+@click.group()
+def cli():
+    pass
+
+
+@cli.command(name="TextCNN")
 @click.option("--training_file_path", type=str)
 @click.option("--embedding_size", type=int)
 @click.option("--sentence_len", type=int)
+@click.option("--conv_filter", type=int)
+@click.option("--global_max_pool", type=bool)
+@click.option("--pool_size", type=int)
+@click.option("--drop_rate", type=float)
+@click.option("--dense_size", type=int)
+@click.option("--l1_regularization", type=float)
+@click.option("--l2_regularization", type=float)
 @click.option("--vocabulary_size", type=int)
 @click.option("--min_count", type=int)
-@click.option("--model", type=str)
 @click.option("--class_num", type=int)
 @click.option("--label_name", type=str)
 @click.option("--learning_rate", type=float)
 @click.option("--epochs", type=int)
 @click.option("--batch_size", type=int)
+@click.option("--checkpoint_saved_path", type=str)
 def training_model(
         training_file_path: str,
         embedding_size: int,
         sentence_len: int,
+        conv_filter: int,
+        global_max_pool: bool,
+        pool_size: int,
+        drop_rate: float,
+        dense_size: int,
+        l1_regularization: float,
+        l2_regularization: float,
         vocabulary_size: int,
         min_count: int,
-        model,
+        text_cnn,
         class_num: int,
         label_name: int,
         learning_rate: int,
         epochs: int,
-        batch_size: int
+        batch_size: int,
+        checkpoint_saved_path: str
 ):
     global TRAINING_FILE_PATH, EMBEDDING_SIZE, SENTENCE_LEN, MIN_COUNT, CLASS_NUM, LEARNING_RATE,\
         EPOCHS, BATCH_SIZE, MODEL, VOCABULARY_SIZE
@@ -78,7 +99,7 @@ def training_model(
     MIN_COUNT = min_count
     CLASS_NUM = class_num
 
-    MODEL = model
+    MODEL = text_cnn
 
     LEARNING_RATE = learning_rate
     EPOCHS = epochs
@@ -95,13 +116,16 @@ def training_model(
 
     x_train, x_val, y_train, y_val = preprocess.split_data(preprocess.age_data_iter())
 
-    model = Model(SENTENCE_LEN, EMBEDDING_SIZE, CLASS_NUM, VOCABULARY_SIZE)
+    text_cnn = TextCNN(
+        SENTENCE_LEN, EMBEDDING_SIZE, CLASS_NUM, VOCABULARY_SIZE, conv_filter, global_max_pool, pool_size,
+        drop_rate, dense_size, l1_regularization, l2_regularization
+    )
 
     optimizer: Adam = Adam(learning_rate=LEARNING_RATE)
     losses: CategoricalCrossentropy = CategoricalCrossentropy()
     metric = CategoricalAccuracy()
 
-    training = DeepLearningModelTraining(model, optimizer, losses, metric)
+    training = DeepLearningModelTraining(text_cnn, optimizer, losses, metric)
 
     training.build((None, SENTENCE_LEN, ))
     training.compile()
@@ -118,6 +142,11 @@ def training_model(
         batch=BATCH_SIZE,
         callbacks=[tensorboard_callback]
     )
+
+    ckpt = tf.train.Checkpoint(text_cnn=training.training_model)
+    ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_saved_path, max_to_keep=5)
+    path = ckpt_manager.save()
+    print("checkpoint of text_cnn has been saved in {}".format(path))
 
 
 if __name__ == "__main__":
