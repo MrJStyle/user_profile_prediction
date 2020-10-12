@@ -98,8 +98,6 @@ def training_model(
     MIN_COUNT = min_count
     CLASS_NUM = class_num
 
-    MODEL = text_cnn
-
     LEARNING_RATE = learning_rate
     EPOCHS = epochs
     BATCH_SIZE = batch_size
