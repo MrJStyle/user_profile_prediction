@@ -110,6 +110,7 @@ def training_model(
     )
 
     preprocess.split_sentence()
+    tokenizer = preprocess.tokenize()
 
     x_train, x_val, y_train, y_val = preprocess.split_data(preprocess.age_data_iter())
 

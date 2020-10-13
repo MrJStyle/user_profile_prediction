@@ -166,7 +166,7 @@ class PreprocessTrainingData(BasePreprocess):
     def filter_stop_words(words: Iterable) -> List:
         return [w for w in words if w not in stop_words and w != " "]
 
-    def age_data_iter(self) -> Generator[Tuple[array, int], None, None]:
+    def tokenize(self) -> Tokenizer:
         print("Tokenizing words")
         self.tokenizer: Tokenizer = Tokenizer(
             num_words=self.VOCABULARY_SIZE,
@@ -177,16 +177,19 @@ class PreprocessTrainingData(BasePreprocess):
 
         print(f"Numbers of total words is {len(self.tokenizer.word_index)}")
 
+        return self.tokenizer
+
+    def age_data_iter(self) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
             yield [x[0] if len(x) != 0 else 0 for x in self.tokenizer.texts_to_sequences(s)], self.age_label[i]
 
     def gender_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, self.SENTENCE_LEN), self.gender_label[i]
+            yield [x[0] if len(x) != 0 else 0 for x in self.tokenizer.texts_to_sequences(s)], self.gender_label[i]
 
     def education_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, self.SENTENCE_LEN), self.education_label[i]
+            yield [x[0] if len(x) != 0 else 0 for x in self.tokenizer.texts_to_sequences(s)], self.education_label[i]
 
     def split_data(self, data_iter: Generator, one_hot: bool = True) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         all_data: List[Tuple[array, int]]
