@@ -1,19 +1,20 @@
 import re
-import jieba
-import pandas as pd
-import numpy as np
-import tensorflow as tf
+from collections import Counter
+from itertools import islice
+from pathlib import Path
+from typing import List, Dict, Iterable, Tuple, Generator, Collection
 
+import jieba
+import numpy as np
+import pandas as pd
+import tensorflow as tf
 from numpy import array
 from pandas import DataFrame
-from tensorflow import Tensor, constant
-from collections import Counter
-from tqdm import tqdm
 from sklearn.model_selection import train_test_split
-from imblearn.over_sampling import RandomOverSampler
-from typing import List, Dict, Iterable, Tuple, Generator, Collection
-from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow import Tensor, constant
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tqdm import tqdm
 
 from user_profile_prediction.data.stopwords import StopwordsDataset
 from user_profile_prediction.etl import BasePreprocess, EmbeddingModel
@@ -24,6 +25,8 @@ stop_words: StopwordsDataset = StopwordsDataset()
 class PreprocessTrainingData(BasePreprocess):
     EMBEDDING_SIZE: int
     SENTENCE_LEN: int
+
+    VOCABULARY_SIZE: int
 
     sample_num: int
     train_valid_test_weights: Collection
@@ -38,6 +41,9 @@ class PreprocessTrainingData(BasePreprocess):
 
     tokenizer: Tokenizer
 
+    path_obj: Path = Path(__file__).parent.parent / "data" / "train_split_words.csv"
+    saved_path: str = path_obj.absolute().__str__()
+
     @classmethod
     def load_from_csv(cls, file_path: str) -> DataFrame:
         df: DataFrame = pd.read_csv(file_path, sep="###__###", header=None)
@@ -50,7 +56,8 @@ class PreprocessTrainingData(BasePreprocess):
             csv_file_path: str,
             train_valid_weights: Collection = (0.9, 0.1),
             embedding_size: int = 100,
-            sentence_len: int = 3
+            sentence_len: int = 3,
+            vocabulary_size: int = 10000
     ):
         super(PreprocessTrainingData, self).__init__(csv_file_path)
         self.preprocess_data.columns = list()
@@ -58,15 +65,28 @@ class PreprocessTrainingData(BasePreprocess):
 
         self.EMBEDDING_SIZE = embedding_size
         self.SENTENCE_LEN = sentence_len
+        self.VOCABULARY_SIZE = vocabulary_size
 
     def split_sentence(self):
         indexes = self.data.index.to_list()
         # np.random.shuffle(indexes)
 
-        for index, query in tqdm(self.data.iloc[indexes[:10000]].iterrows()):
+        saved_path: Path = Path(self.saved_path)
+        if saved_path.exists():
+            print(f"loading split_words.csv from '{self.saved_path}'")
+            self.load_split_words_csv()
+            print("finish loading split_words.csv")
+
+            static: List = [len(sent) for sent in self.sentences_with_split_words]
+            print(f"The average length of sentence is {sum(static) / len(static)}")
+            return self.sentences_with_split_words
+
+        print("start to split words by jieba")
+
+        for index, query in tqdm(self.data.iloc[indexes[:]].iterrows()):
             # TODO 测试模型由于计算资源有限，只用1000个样本做测试
 
-            if query["Age"] == 0:
+            if query["Age"] == 0 or query["Gender"] == 0 or query["Education"] == 0:
                 continue
 
             words = []
@@ -82,17 +102,51 @@ class PreprocessTrainingData(BasePreprocess):
             self.sentences_with_split_words.append(words)
 
             self.age_label.append(query["Age"])
-            # self.gender_label.append(query["Gender"])
-            # self.education_label.append(query["Education"])
+            self.gender_label.append(query["Gender"])
+            self.education_label.append(query["Education"])
 
         self.sample_num = len(self.sentences_with_split_words)
 
         self.age_label_weights = dict(Counter(self.age_label))
         self.gender_label_weights = dict(Counter(self.gender_label))
         self.education_label_weights = dict(Counter(self.education_label))
+        print("finish splitting words")
 
+        print(f"saving split_words.csv to '{self.saved_path}'")
+        self.save_split_words_csv()
+        print("finish saving split_words.csv")
+
+        static: List = [len(sent) for sent in self.sentences_with_split_words]
+        print(f"The average length of sentence is {sum(static) / len(static)}")
 
         return self.sentences_with_split_words
+
+    def save_split_words_csv(self) -> None:
+        with open(self.saved_path, "w") as f:
+            f.write("Query_List, Age, Gender, Education\n")
+
+            for i in range(len(self.sentences_with_split_words)):
+                f.write(
+                    "{}, {}, {}, {}\n".format(
+                        ' '.join(self.sentences_with_split_words[i]),
+                        self.age_label[i],
+                        self.gender_label[i],
+                        self.education_label[i]
+                    )
+                )
+
+    def load_split_words_csv(self) -> None:
+        line: str
+
+        with open(self.saved_path, "r") as f:
+            for line in islice(f, 1, None):
+                if line.endswith("\n"):
+                    line = line[:-1]
+                query_list, age, gender, edu = line.split(",")
+                self.sentences_with_split_words.append(query_list.split(" "))
+                self.age_label.append(int(age))
+                self.gender_label.append(int(gender))
+                self.education_label.append(int(edu))
 
     @property
     def train_valid_weights(self):
@@ -112,37 +166,44 @@ class PreprocessTrainingData(BasePreprocess):
     def filter_stop_words(words: Iterable) -> List:
         return [w for w in words if w not in stop_words and w != " "]
 
-    def age_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
+    def tokenize(self) -> Tokenizer:
+        print("Tokenizing words")
         self.tokenizer: Tokenizer = Tokenizer(
-            num_words=10000,
+            num_words=self.VOCABULARY_SIZE,
             oov_token="NaN",
             filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n'
         )
         self.tokenizer.fit_on_texts(self.sentences_with_split_words)
 
+        print(f"Numbers of total words is {len(self.tokenizer.word_index)}")
+
+        return self.tokenizer
+
+    def age_data_iter(self) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            # yield model.words_to_vec(s, self.SENTENCE_LEN), self.age_label[i]
             yield [x[0] if len(x) != 0 else 0 for x in self.tokenizer.texts_to_sequences(s)], self.age_label[i]
 
     def gender_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, self.SENTENCE_LEN), self.gender_label[i]
+            yield [x[0] if len(x) != 0 else 0 for x in self.tokenizer.texts_to_sequences(s)], self.gender_label[i]
 
     def education_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]:
         for i, s in enumerate(self.sentences_with_split_words):
-            yield model.words_to_vec(s, self.SENTENCE_LEN), self.education_label[i]
+            yield [x[0] if len(x) != 0 else 0 for x in self.tokenizer.texts_to_sequences(s)], self.education_label[i]
 
     def split_data(self, data_iter: Generator, one_hot: bool = True) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         all_data: List[Tuple[array, int]]
         all_data = [(x, y) for x, y in data_iter]
 
         x_train_raw, y_train_raw = zip(*all_data)
+
+        print("Padding sentences")
         x_train_raw = pad_sequences(
-                x_train_raw,
-                maxlen=self.SENTENCE_LEN,
-                padding="post",
-                truncating="post"
-            )
+            x_train_raw,
+            maxlen=self.SENTENCE_LEN,
+            padding="post",
+            truncating="post"
+        )
 
         y_train_raw = array(y_train_raw)
         # x_train_raw, y_train_raw = \
@@ -166,6 +227,7 @@ class PreprocessTrainingData(BasePreprocess):
         # x_val: Tensor = constant(x_val.reshape(-1, self.SENTENCE_LEN, self.EMBEDDING_SIZE))
         x_train: Tensor = constant(x_train)
         x_val: Tensor = constant(x_val)
+
         if one_hot:
             y_train: Tensor = tf.one_hot(y_train, depth=np.unique(y_train_raw).__len__())
             y_val: Tensor = tf.one_hot(y_val, depth=np.unique(y_train_raw).__len__())
@@ -174,15 +236,8 @@ class PreprocessTrainingData(BasePreprocess):
 
 
 if __name__ == "__main__":
-    import tensorflow as tf
-    from user_profile_prediction.etl.embedding import Embedding
-
     p = PreprocessTrainingData("/Volumes/Samsung_T5/Files/Document/china_hadoop/GroupProject/project_data/data/train.csv")
     p.split_sentence()
-
-    e = Embedding(100, 5)
-    m = e.load_embedding_model()
-
-    a, b, c, d = p.split_data(p.age_data_iter(e))
+    # a, b, c, d = p.split_data(p.age_data_iter())
 
     print("finish")

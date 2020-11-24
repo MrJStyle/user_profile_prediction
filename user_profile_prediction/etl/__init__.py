@@ -1,7 +1,7 @@
 import os
-import tensorflow as tf
 from typing import List, Iterable, Tuple, Generator, NewType, Dict
 
+import tensorflow as tf
 from gensim.models import Word2Vec
 from numpy import array
 from pandas import DataFrame
@@ -45,7 +45,7 @@ class BasePreprocess(object):
     @staticmethod
     def filter_stop_words(words: Iterable) -> List: ...
 
-    def age_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]: ...
+    def age_data_iter(self) -> Generator[Tuple[array, int], None, None]: ...
 
     def gender_data_iter(self, model: EmbeddingModel) -> Generator[Tuple[array, int], None, None]: ...
 
