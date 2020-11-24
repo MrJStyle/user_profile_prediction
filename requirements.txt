@@ -105,7 +105,7 @@ testpath==0.4.4           # via -c fix-requirements.txt, nbconvert
 threadpoolctl==2.1.0      # via -c fix-requirements.txt, scikit-learn
 tornado==6.0.4            # via -c fix-requirements.txt, ipykernel, jupyter-client, notebook, terminado
 tqdm==4.48.2              # via -c fix-requirements.txt, -r requirements.in
-traitlets==5.0.0          # via -c fix-requirements.txt, ipykernel, ipython, ipywidgets, jupyter-client, jupyter-core, nbconvert, nbformat, notebook, qtconsole
+traitlets==4.3.3         # via -c fix-requirements.txt, ipykernel, ipython, ipywidgets, jupyter-client, jupyter-core, nbconvert, nbformat, notebook, qtconsole
 urllib3==1.25.10          # via -c fix-requirements.txt, botocore, requests
 wcwidth==0.2.5            # via -c fix-requirements.txt, prompt-toolkit
 webencodings==0.5.1       # via -c fix-requirements.txt, bleach

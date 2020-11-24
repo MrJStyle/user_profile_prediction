@@ -1,11 +1,11 @@
-import tensorflow as tf
-
-from tensorflow import Tensor
 from typing import List, Union, Tuple
 
-from user_profile_prediction.training import Optimizer, Losses, Metrics
-from user_profile_prediction.model import TrainingModel
+import tensorflow as tf
+from tensorflow import Tensor
+
 from user_profile_prediction.etl import EmbeddingModel
+from user_profile_prediction.model import TrainingModel
+from user_profile_prediction.training import Optimizer, Losses, Metrics
 
 
 class DeepLearningModelTraining:
@@ -18,13 +18,13 @@ class DeepLearningModelTraining:
     def __init__(
             self,
             training_model: TrainingModel,
-            embedding_model: EmbeddingModel,   # embedding model that has been trained
+            # embedding_model: EmbeddingModel,   # embedding model that has been trained
             optimizer: Optimizer = None,
             losses: Losses = None,
             metrics: Union[Metrics, List[Metrics]] = None
     ):
         self.training_model = training_model
-        self.embedding_model = embedding_model
+        # self.embedding_model = embedding_model
         self._optimizer = optimizer
         self._losses = losses
         self._metric = metrics
